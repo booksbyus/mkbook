@@ -29,3 +29,12 @@ Workflow:
 # this produces ODF, HTML, MD files
 # for printable PDF, load ODF in LibreOffice and save as PDF
 
+For an index, set the INDEX variable in the .book file to a file
+(index.txt is an example) containing one keyword per line. To 
+create categories, write "word | category".
+
+E.g.
+
+    belgium | country
+    canada | country
+
