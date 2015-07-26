@@ -38,3 +38,7 @@ E.g.
     belgium | country
     canada | country
 
+The templating system works by inserting symbols from the .book file into
+templates. There are a few symbols known to the mkodt script: FILENAME,
+INDEX, BREAKS, INSIDE, OUTSIDE, HRIGHT. The others are only known to the
+templates.
