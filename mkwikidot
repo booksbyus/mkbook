@@ -1,0 +1,242 @@
+#! /usr/bin/perl
+#   mkwikidot
+#   - convert ZeroMQ document to Wikidot format
+#   - converts [[code type="textdiagram"]] via asciitosvg
+#
+#   Usage: mkwikidot docfile
+#
+#   Creates Wikidot file as specified by .output and images in images/.
+#
+#   By Pieter Hintjens, free for remixing without conditions.
+#   Images are stored in the github repository at
+#   https://github.com/imatix/zguide
+#
+$listings = 0;
+
+die "Can't create article.wd: $!"
+    unless open (OUTPUT, ">article.wd");
+    
+while (<>) {
+    chop while /\s$/;
+    if (/^\./) {
+        #   Process directive
+        if (/^\.set\s+(\w+)=(.*)/) {
+            $symbols {$1} = $2;
+        }
+        elsif (/^\.\-/) {
+            #   Comment, ignore
+        }
+        elsif (/^\.end/) {
+            writeln ("(More coming soon...)");
+            $EOD = 1;       #   Stop output here
+        }
+        else {
+            print "Illegal directive $_ at line $.\n";
+        }
+    }
+    elsif (/^([\+]+)/) {
+        #   Header at any level
+        writeln ($_);
+    }
+    #  Process named fragment codeblock
+    elsif (/\[\[code\s+type=\"fragment\"\s+name=\"([^"]+)\"/) {
+        $name = $1;
+        mkdir ("fragments") unless -d "fragments";
+        die "Can't create fragments/$name.c: $!"
+            unless open (FRAGMENT, ">fragments/$name.c");
+        while (<>) {
+            last if /\[\[\/code\]\]/;
+            print FRAGMENT $_;
+        }
+        $listings++;
+        process_codeblock ("fragments/$name.c", "Listing $listings");
+    }
+    #  Process named example codeblock
+    elsif (/\[\[code\s+type=\"example\"\s+title=\"([^"]+)\"\s+name=\"([^"]+)\"\]\]/) {
+        $title = zmq_symbol ($1); #  Some titles have '0MQ'
+        $name = $2;
+        #   Show primary language example inline
+        process_codeblock ("$name.c", $title);
+        #   Discard any real contents of code block
+        while (<>) {
+            last if /\[\[\/code\]\]/;
+            print "W: discarding code for $title - $name\n";
+        }
+    }
+    #  Process plain code block
+    elsif (/\[\[code\]\]/) {
+        writesrc ($_);
+        while (<>) {
+            chop;
+            writesrc ($_);
+            last if /\[\[\/code\]\]/;
+        }
+    }
+    elsif (/\[\[code type=\"textdiagram\"\s+title=\"([^"]+)\"\]\]/) {
+        $title = $1;
+        $figure = $figure + 1;
+        mkdir ("images") unless -d "images";
+        die "Can't create images/fig$figure.txt: $!"
+            unless open (IMAGE, ">images/fig$figure.txt");
+        $longest = 0;
+        while (<>) {
+            chop;
+            last if /\[\[\/code\]\]/;
+            $longest = length ($_) if length ($_) > $longest;
+            print IMAGE "$_\n";
+        }
+        close (IMAGE);
+
+        #   Calculate scaling so image looks decent
+        $scale = 60 / $longest;
+        $scale = 1 if $scale > 1;
+
+        #   Convert diagram into image of required format
+        system ("a2s -iimages/fig$figure.txt -oimages/fig$figure.svg");
+        system ("rasterizer -d images images/fig$figure.svg");
+        
+        #   Images will be attached to same page
+        writeln ("**Figure $figure - $title**");
+        writeln ("[[=image fig$figure.png]]");
+    }
+    elsif (/\[\[code/) {
+        print "E: unparsed code block: $_\n";
+    }
+    else {
+        #   Normal text
+        #   Replace double hyphens with em dashes
+        while (/(--)/) {
+            $_ = "$`—$'";
+        }
+        writeln ($_);
+    }
+}
+close (OUTPUT);
+close (UPLOAD);
+exit (0);
+
+
+#   Writes $_ to OUTPUT after expanding all symbols
+
+sub writeln {
+    local ($_) = @_;
+    $_ = expand_symbols ($_);
+    print OUTPUT "$_\n" unless $EOD;
+}
+
+sub writesrc {
+    local ($_) = @_;
+    print OUTPUT "$_\n" unless $EOD;
+}
+
+#   Process one example in one language
+
+sub process_codeblock {
+    local ($filename, $title) = @_;
+    if (-f $filename) {
+        print "I: processing $filename...\n";
+        $lexopt = $lexer {$language}? "-l $lexer{$language}": "";
+        
+        system ("egrep -v \" \\.split| \\.skip| \\.until\" $filename > tempfile.c");
+        system ("pygmentize -f bb tempfile.c > tempfile.bb");
+        exit (1) if $?;
+        system ("bb2wd tempfile.bb > tempfile.wd");
+        
+        open (MARKED, "tempfile.wd");
+        while (<MARKED>) {
+            print OUTPUT $_;
+        }
+        close (MARKED);
+        writeln ("//$filename: $title//");
+        system ("rm tempfile.c tempfile.bb tempfile.wd");
+        return 1;       #   File exists
+    }
+    else {
+        print "E: could not find $filename\n";
+    }
+}
+
+
+#   Expand symbols, hyperlinks, etc
+#
+sub expand_symbols {
+    local ($_) = @_;
+    local ($before,
+           $match,
+           $after,
+           $expr);
+
+    return unless ($_);                 #   Quit if input string is empty
+
+    #   Replace 0MQs
+    $_ = zmq_symbol ($_);
+
+    #   Recursively expand symbols like this (and in this order):
+    #   $(xxx)          value of variable
+    #   $(xxx?zzz)      value of variable, or zzz if undefined
+    #   %(text?zzz)     value of environment variable, or zzz if undef
+    for (;;) {
+        #   Force expansion from end of string first, so things like
+        #   $(xxx?$(yyy)) work properly.
+        if (/[\$%]\(/ || /\!([a-z_]+)\s*\(/i) {
+            $before = $`;
+            $match  = $&;
+            $after  = expand_symbols ($');
+            $_ = $before.$match.$after;
+        }
+        #   $(xxx)
+        if (/\$\(([A-Za-z0-9-_\.]+)\)/) {
+            $_ = $`.&valueof ($1).$';
+        }
+        #   $(xxx?zzz)
+        elsif (/\$\(([A-Za-z0-9-_\.]+)\?([^)\$]*)\)/) {
+            $_ = $`.&valueof ($1, $2).$';
+        }
+        #   %(text)
+        elsif (/\%\(([^\)]+)\)/) {
+            $_ = $`.$ENV {$1}.$';
+        }
+        #   %(text?zzz)
+        elsif (/\%\(([^\)]+)\?([^)\$]*)\)/) {
+            $_ = $`.($ENV {$1}? $ENV {$1}: $2).$';
+        }
+        else {
+            last;
+        }
+    }
+    #   Translate figure references
+    s/\[figure\]//g;
+    
+    return $_;
+}
+
+#   Translate 0MQ into ØMQ and 0\MQ into 0MQ
+sub zmq_symbol {
+    local ($_) = @_;
+
+    s/0MQ/ØMQ/g;
+    s/0\\MQ/0MQ/g;
+    return $_;
+}
+
+
+#   Subroutine returns the value of the specified symbol; it issues a
+#   warning message and returns 'UNDEF' if the symbol is not defined
+#   and the default value is empty.
+#
+sub valueof {
+    local ($symbol, $default) = @_;     #   Argument is symbol name
+    local ($return);                    #   Returned value
+    local ($langed_symbol);             #   Language-dependent symbol
+
+    if (defined ($symbols {$symbol})) {
+        $return = $symbols {$symbol};
+        return $return;
+    }
+    elsif (defined ($default)) {
+        return ($default);
+    }
+    print ("E: undefined symbol \"$symbol\"");
+    $symbols {$symbol} = "UNDEF";
+    return $symbols {$symbol};
+}

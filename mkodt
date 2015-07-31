@@ -1,0 +1,533 @@
+#! /usr/bin/perl
+#
+#   Builds
+#   This should be moved off into a separate tool
+#
+use Tree::Trie;
+use feature 'say';
+bookmarks_load ();
+
+#   Prepare new book in output subdirectory
+system ("rm -rf output; cp -r template output; rm output/Pictures/*");
+
+#   Defaults
+$odtfile = "book";
+$breaks = "none";
+$term_min_density = 5000;   #   About 2.5 pages
+
+#   Autoflush output to console
+$| = 1;
+
+while (<>) {
+    chop while /\s$/;
+    if (/^\#/) {
+        #   Comment
+    }
+    elsif (/(\S+)=(.*)/) {
+        #   Symbol definition
+        $symbols {$1} = preformat ($2);
+        if ($1 eq "FILENAME") {
+            $odtfile = $2;
+            $odtfile =~ s/ /-/g;
+        }
+        elsif ($1 eq "INDEX") {
+            $index_file = $2;
+            index_load ($index_file);
+        }
+        elsif ($1 eq "BREAKS") {
+            $breaks = $2;
+        }
+        elsif ($1 eq "WIDTH") {
+            $width = $2;
+        }
+        elsif ($1 eq "INSIDE") {
+            $inside = $2;
+        }
+        elsif ($1 eq "OUTSIDE") {
+            $outside = $2;
+        }
+    }
+    elsif (/(\S+)/) {
+        if ($content == 0) {
+            $symbols {"HRIGHT"} = $width - ($inside + $outside);
+            $content = 1;
+            process_template ("styles");
+            process_template ("meta");
+            process_template ("content_header");
+        }
+        #   Source file to include
+        process_source ($1);
+    }
+}
+generate_index () if $index_file;
+process_template ("content_footer");
+bookmarks_save ();
+build_manifest ();
+build_odt_file ();
+index_report ();
+
+exit (0);
+
+sub process_template {
+    local ($filename) = @_;
+    die "Can't read $filename.tpl: $!"
+        unless open (FILE, "$filename.tpl");
+
+    while (<FILE>) {
+        chop while /\s$/;
+        if (/^\.output\s+(\S+)/) {
+            die "Can't create $1: $!"
+                unless open (OUTPUT, ">output/$1");
+        }
+        elsif (/^\.close/) {
+            close (OUTPUT);
+        }
+        else {
+            #   Substitute variables
+            while (/%([A-Z0-9_]+)%/) {
+                $_ = $`.$symbols {$1}.$';
+            }
+            writeln ($_);
+        }
+    }
+}
+
+sub process_source {
+    local ($filename) = @_;
+    die "Can't read $filename: $!"
+        unless open (FILE, $filename);
+
+    print "Processing $filename:";
+    while (<FILE>) {
+        if (++$counter == 10) {
+            print ".";
+            $counter = 0;
+        }
+        chop while /\s$/;
+        if (/^\/\/ kate/) {
+            #   Kate hint
+        }
+        elsif (/^\./) {
+            #   Process directive
+            if (/^\.set\s+(\w+)=(.*)/) {
+                $symbols {$1} = $2;
+            }
+            elsif (/^\.\-/) {
+                #   Comment, ignore
+            }
+            elsif (/^\.end/) {
+                last;
+            }
+            elsif (/^\.bookmark\s+(\w.*)/) {
+                $anchor = $1;
+            }
+            else {
+                print "Illegal directive $_ at line $.\n";
+            }
+        }
+        elsif (/^\+\s+Preface/) {
+            close_list ();
+            writeln ("<text:h text:style-name=\"Heading_20_1\" text:outline-level=\"1\">Preface</text:h>");
+            $line_density = 320;     #   Counts as 4 lines of 80 chars
+        }
+        elsif (/^\+\s+Postface/) {
+            close_list ();
+            writeln ("<text:h text:style-name=\"Heading_20_1\" text:outline-level=\"1\">Postface</text:h>");
+            $line_density = 320;     #   Counts as 4 lines of 80 chars
+        }
+        elsif (/^\+\s+Appendix: (.*)$/) {
+            close_list ();
+            writeln ("<text:h text:style-name=\"Heading_20_1\" text:outline-level=\"1\">Appendix: $1</text:h>");
+            $line_density = 320;     #   Counts as 4 lines of 80 chars
+        }
+        elsif (/^\+\s+(.*)$/) {
+            $bookmarks {$anchor} = preformat ($1, "index") if $anchor;
+            $documents {$anchor} = $symbols {TITLE};
+            if ($breaks eq "chapter") {
+                $chapter++;
+                $title = "Chapter $chapter. $1";
+            }
+            else {
+                $title = $1;
+            }
+            close_list ();
+            writeln ("<text:h text:style-name=\"Heading_20_1\" text:outline-level=\"1\">$title</text:h>");
+            $line_density = 320;     #   Counts as 4 lines of 80 chars
+        }
+        elsif (/^\+\+\s+(.*)$/) {
+            close_list ();
+            $_ = preformat ($1, "index");
+            writeln ("<text:h text:style-name=\"Heading_20_2\" text:outline-level=\"2\">$_</text:h>");
+            $line_density = 160;     #   Counts as 2 lines of 80 chars
+        }
+        elsif (/^\+\+\+\s+(.*)$/) {
+            close_list ();
+            $_ = preformat ($1, "index");
+            writeln ("<text:h text:style-name=\"Heading_20_3\" text:outline-level=\"3\">$_</text:h>");
+            $line_density = 120;     #   Counts as 1.5 lines of 80 chars
+        }
+        elsif (/^> /) {
+            $_ = preformat ($', "index");
+            writeln ("<text:p text:style-name=\"Quotations\">$_</text:p>");
+            $line_density = int (1.2 * length $line);
+        }
+        elsif (/^\* /) {
+            require_list ("L1");
+            $_ = preformat ($', "index");
+            writeln ("<text:list-item>");
+            writeln ("  <text:p text:style-name=\"Bullet_20_item\">$_</text:p>");
+            writeln ("</text:list-item>");
+            $line_density = length $_;
+        }
+        elsif (/^# /) {
+            require_list ("L2");
+            $_ = preformat ($', "index");
+            writeln ("<text:list-item>");
+            writeln ("  <text:p text:style-name=\"Bullet_20_item\">$_</text:p>");
+            writeln ("</text:list-item>");
+            $line_density = length $_;
+        }
+        elsif (/:$/) {
+            #   Normal text ending in colon, Keep-follow
+            close_list ();
+            $_ = preformat ($_, "index");
+            writeln ("<text:p text:style-name=\"Text_20_keep\">$_</text:p>");
+            $line_density = length $_;
+        }
+        elsif (/\|\|/) {
+            #   Table row
+            $columns = 0;
+            $_ = preformat ($_, "index");
+            while (/\|\|\s*([^|]+)/) {
+                $_ = $';
+                $cell [$columns++] = $1;
+            }
+            if (require_list ("table")) {
+                $style = $columns > 4? "A": "C";
+                for ($column = 0; $column < $columns; $column++) {
+                    writeln ("<table:table-column table:style-name=\"Table1.$style\"/>");
+                    $style = $columns > 4? "B": "C";
+                }
+            }
+            writeln ("<table:table-row>");
+            for ($column = 0; $column < $columns; $column++) {
+                writeln ("<table:table-cell table:style-name=\"Table1.Cell\" office:value-type=\"string\">");
+                writeln ("<text:p text:style-name=\"TableCell\">$cell[$column]</text:p>");
+                writeln ("</table:table-cell>");
+            }
+            writeln ("</table:table-row>");
+            $line_density = 80;
+        }
+        elsif ($_) {
+            #   Normal text
+            close_list ();
+            $_ = preformat ($_, "index");
+            writeln ("<text:p text:style-name=\"Text_20_body\">$_</text:p>");
+            $line_density = length $_;
+        }
+        #   Track total page density so far for sparse indexing
+        $cur_density += $line_density;
+    }
+    close_list ();
+    print "\n";
+}
+
+#   Preformat text, which replaces special characters and adds indexing tags
+sub preformat {
+    local ($_, $action) = @_;
+    #   Replace unsafe XML characters
+    s/&/&amp;/g;
+    s/</&lt;/g;
+    s/>/&gt;/g;
+
+    #   Replace double quotes with curly quotes
+    while (/"([^"]+)"/) {
+        $_ = "$`“$1”$'";
+    }
+    #   Replace double quote at start of line
+    if (/^"([^"]+)$/) {
+        $_ = "“$1";
+    }
+    #   Replace apostrophes with curly single quote
+    while (/([a-zA-Z])'([a-zA-Z])/) {
+        $_ = "$`$1’$2$'";
+    }
+    #   Replace double hyphens with em dashes
+    while (/(--)/) {
+        $_ = "$`—$'";
+    }
+    $_ = tag_index_entries ($_) if $action eq "index" && defined ($index);
+    return $_;
+}
+
+sub tag_index_entries {
+    local ($_) = @_;
+    local $done = "";
+
+    while ($_) {
+        #   Skip stuff that we don't want to index
+        #   Hyperlink references, non-word fragments
+        while (/^(\[http(s)?:\/\/[^ ]+)/ || /^(\W+)/) {
+            $done .= $`.$1;
+            $_ = $';
+        }
+        #   Check if term is in index
+        $term = $index->lookup ($_);
+
+        #   Ignore repeats of terms that are too close together
+        undef $term
+            if defined ($last_density {$term})
+            && $cur_density - $last_density {$term} < $term_min_density;
+
+        if ($term && substr ($_, length ($term), 1) !~ /[a-z]/) {
+            $done .= "!($term)!";
+            #   Remove term from rest of line
+            $_ = substr ($_, length ($term));
+            $last_density {$term} = $cur_density;
+        }
+        elsif (/^(\w)/) {
+            $done .= $1;
+            $_ = $';
+        }
+    }
+    return $done;
+}
+
+#   Writes $_ to OUTPUT after expanding all symbols
+sub writeln {
+    local ($_) = @_;
+    $_ = postformat ($_);
+    print OUTPUT "$_\n";
+}
+
+#   Expand symbols, hyperlinks, etc
+sub postformat {
+    local ($_) = @_;
+    local ($before,
+           $match,
+           $after,
+           $expr);
+
+    return unless ($_);                 #   Quit if input string is empty
+
+    #   Recursively expand symbols like this (and in this order):
+    #   $(xxx)          value of variable
+    #   $(xxx?zzz)      value of variable, or zzz if undefined
+    #   %(text?zzz)     value of environment variable, or zzz if undef
+    for (;;) {
+        #   Force expansion from end of string first, so things like
+        #   $(xxx?$(yyy)) work properly.
+        if (/[\$%]\(/ || /\!([a-z_]+)\s*\(/i) {
+            $before = $`;
+            $match  = $&;
+            $after  = postformat ($');
+            $_ = $before.$match.$after;
+        }
+        #   $(xxx)
+        if (/\$\(([A-Za-z0-9-_\.]+)\)/) {
+            $_ = $`.&valueof ($1).$';
+        }
+        #   $(xxx?zzz)
+        elsif (/\$\(([A-Za-z0-9-_\.]+)\?([^)\$]*)\)/) {
+            $_ = $`.&valueof ($1, $2).$';
+        }
+        #   %(text)
+        elsif (/\%\(([^\)]+)\)/) {
+            $_ = $`.$ENV {$1}.$';
+        }
+        #   %(text?zzz)
+        elsif (/\%\(([^\)]+)\?([^)\$]*)\)/) {
+            $_ = $`.($ENV {$1}? $ENV {$1}: $2).$';
+        }
+        else {
+            last;
+        }
+    }
+    #   Translate bookmark references
+    while (/\[#(\S+)\]/) {
+        print "Undefined bookmark: $1\n"
+            unless defined ($bookmarks {$1});
+        $_ = "$`“$bookmarks{$1}”$'";
+    }
+
+    #   Translate email addresses
+    s/\<([\w\.]+@[\w\.]+)\>/<text:span text:style-name=\"Teletype\">$1<\/text:span>/g;
+
+    #   Translate character styles
+    s/([^:])\/\/([^\/]+)\/\//$1<text:span text:style-name=\"Italic\">$2<\/text:span>/g;
+    s/\*\*([^*]+)\*\*/<text:span text:style-name=\"Bold\">$1<\/text:span>/g;
+    s/\{\{([^{]+)\}\}/<text:span text:style-name=\"Teletype\">$1<\/text:span>/g;
+
+    #   Translate normal hyperlinks
+    while (/\[(http(s)?:\/\/[^ ]+) ([^\]]+)\]/) {
+        $note++;
+        $_ = "$`$3<text:note text:id=\"ftn$note\" text:note-class=\"footnote\"><text:note-citation>$note</text:note-citation><text:note-body><text:p text:style-name=\"Footnote\">$1</text:p></text:note-body></text:note>$'";
+    }
+    #   Translate index entries
+    while (/!\(([^,)]+)\)!/) {
+        $term = $1;
+        $category = $index->lookup_data ($term);
+        $hits {$category."|".lc $term}++;
+        $ref_index++;
+        push @{$refs {lc $term}}, $ref_index;
+        $_ = "$`<text:reference-mark-start text:name=\"index$ref_index\"/>$term<text:reference-mark-end text:name=\"index$ref_index\"/>$'";
+    }
+    return $_;
+}
+
+
+#   Subroutine returns the value of the specified symbol; it issues a
+#   warning message and returns 'UNDEF' if the symbol is not defined
+#   and the default value is empty.
+#
+sub valueof {
+    local ($symbol, $default) = @_;     #   Argument is symbol name
+    local ($return);                    #   Returned value
+    local ($langed_symbol);             #   Language-dependent symbol
+
+    if (defined ($symbols {$symbol})) {
+        $return = $symbols {$symbol};
+        return $return;
+    }
+    elsif (defined ($default)) {
+        return ($default);
+    }
+    print ("E: undefined symbol \"$symbol\"");
+    $symbols {$symbol} = "UNDEF";
+    return $symbols {$symbol};
+}
+
+sub require_list {
+    local ($style) = @_;                #   Argument is list style
+    if ($style eq "table") {
+        if (!$in_table) {
+            writeln ("<table:table table:name=\"Table1\" table:style-name=\"Table1\">");
+            $in_table = 1;
+            return 1;
+        }
+    }
+    elsif (!$in_list) {
+        writeln ("<text:list text:style-name=\"$style\">");
+        $in_list = 1;
+    }
+}
+
+sub close_list {
+    if ($in_list) {
+        $in_list = 0;
+        writeln ("</text:list>");
+    }
+    elsif ($in_table) {
+        $in_table = 0;
+        writeln ("</table:table>");
+    }
+}
+
+#   Load bookmarks
+sub bookmarks_load {
+    if (open (BOOKMARKS, ".bookmarks")) {
+        while (<BOOKMARKS>) {
+            chop;
+            if (/(\S+)\s+(.+)\|(.+)/) {
+                $bookmarks {$1} = $2;
+                $documents {$1} = $3;
+            }
+        }
+        close (BOOKMARKS);
+    }
+}
+
+#   Save bookmarks
+sub bookmarks_save {
+    if (open (BOOKMARKS, ">.bookmarks")) {
+        foreach $bookmark (keys %bookmarks) {
+            print BOOKMARKS "$bookmark $bookmarks{$bookmark}|$documents{$bookmark}\n";
+        }
+        close (BOOKMARKS);
+    }
+}
+
+sub index_load {
+    local ($filename) = @_;                #   Argument is filename
+
+    $index = new Tree::Trie;
+    $index->deepsearch (prefix);
+    if (open (INDEX, $filename)) {
+        while (<INDEX>) {
+            chop;
+            $_ = preformat ($_);
+            if (/^(.+)\|(.+)$/) {   #   Word in category
+                $term = $1;
+                $category = $2;
+                $index->add_data ($term => $category);
+                #   "the Spider" also matches "The Spider"
+                $index->add_data (ucfirst ($term) => $category) if $term =~ /^[a-z]/;
+                $hits {$category."|".lc $term} = 0;
+                $orig {lc $term} = $term;
+            }
+            elsif (/^(.+)$/) {      #   No category
+                $term = $1;
+                $index->add ($term);
+                $index->add (ucfirst ($term)) if $term =~ /^[a-z]/;
+                $hits {"|".lc $term} = 0;
+                $orig {lc $term} = $term;
+            }
+            else {
+                print $_;
+            }
+        }
+        close (INDEX);
+    }
+}
+
+sub generate_index {
+    $odt = "";
+    foreach (sort keys %hits) {
+        /([^|]*)\|(.*)/;
+        $this_cat = ucfirst $1;
+        $term = $2;
+        my $entry = ucfirst $orig {$term};
+        if ($this_cat) {
+            #   Term inside category
+            if ($last_cat ne $this_cat) {
+                $last_cat = $this_cat;
+                $odt .= "<text:p text:style-name=\"User_20_Index_20_1\"><text:span text:style-name=\"Bold\">$this_cat<\/text:span></text:p>\n";
+            }
+            $odt .= "<text:p text:style-name=\"User_20_Index_20_1\"><text:s text:c=\"4\"/>$entry<text:s text:c=\"4\"/>";
+        }
+        else {
+            #   Top-level term
+            $odt .= "<text:p text:style-name=\"User_20_Index_20_1\">$entry<text:s text:c=\"4\"/>";
+        }
+        $comma = "";
+        foreach my $ref_index (@{$refs {$term}}) {
+            $odt .= "$comma<text:reference-ref text:reference-format=\"page\" text:ref-name=\"index$ref_index\">1</text:reference-ref>";
+            $comma = ", ";
+        }
+        $odt .= "</text:p>\n";
+    }
+    $symbols {"INDEXTXT"} = $odt;
+    process_template ("content_index");
+}
+
+sub index_report {
+    foreach $term (sort keys %hits) {
+        print "No hits on $term\n" unless $hits {$term};
+    }
+}
+
+sub build_manifest {
+    #   Create image manifest
+    process_template ("manifest_header");
+    #   We don't produce images but we might add SVG support here
+    process_template ("manifest_footer");
+}
+
+sub build_odt_file {
+    #   Build ODT in main directory
+    unlink "$odtfile.odt";
+    chdir "output";
+    print "Creating $odtfile.odt...\n";
+    system "zip -rq ../$odtfile.odt *";
+    chdir "..";
+}

@@ -1,0 +1,4 @@
+#! /bin/sh
+
+cp bb2wd md2html mkmarkdown mkodt mkwikidot wdput wdattach /usr/local/bin
+cp asciitosvg/a2s asciitosvg/a2s52.php /usr/local/bin

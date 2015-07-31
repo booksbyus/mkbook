@@ -1,0 +1,143 @@
+#! /usr/bin/perl
+#
+#   Builds markdown from supplied text
+#
+use feature 'say';
+bookmarks_load ();
+
+#   Autoflush output to console
+$| = 1;
+$breaks = "none";
+
+while (<>) {
+    chop while /\s$/;
+    if (/^\#/) {
+        #   Comment
+    }
+    elsif (/(\S+)=(.*)/) {
+        #   Symbol definition
+        $symbols {$1} = $2;
+        if ($1 eq "FILENAME") {
+            open OUTPUT, ">$2.md";
+        }
+        elsif ($1 eq "BREAKS") {
+            $breaks = $2;
+        }
+    }
+    elsif (/(\S+)/) {
+        if ($content == 0) {
+            $content = 1;
+        }
+        #   Source file to include
+        process_source ($1);
+    }
+}
+bookmarks_save ();
+exit (0);
+
+sub process_source {
+    local ($filename) = @_;
+    die "Can't read $filename: $!"
+        unless open (FILE, $filename);
+
+    while (<FILE>) {
+        chop while /\s$/;
+        if (/^\/\/ kate/) {
+            #   Kate hint
+        }
+        elsif (/^\./) {
+            #   Process directive
+            if (/^\.end/) {
+                last;
+            }
+            elsif (/^\.bookmark\s+(\w.*)/) {
+                $anchor = $1;
+            }
+            else {
+                print "Illegal directive $_ at line $.\n";
+            }
+        }
+        elsif (/^\+\s+Preface/) {
+            writeln ("# Preface");
+        }
+        elsif (/^\+\s+Postface/) {
+            writeln ("# Postface");
+        }
+        elsif (/^\+\s+Appendix: (.*)$/) {
+            $bookmarks {$anchor} = $1 if $anchor;
+            $documents {$anchor} = $symbols {TITLE};
+            writeln ("# Appendix: $1");
+        }
+        elsif (/^\+\s+(.*)$/) {
+            $bookmarks {$anchor} = $1 if $anchor;
+            $documents {$anchor} = $symbols {TITLE};
+            $chapter++;
+            if ($breaks eq "chapter") {
+                writeln ("# Chapter $chapter. $1");
+            }
+            else {
+                writeln ("# $1");
+            }
+        }
+        elsif (/^\+\+\s+(.*)$/) {
+            writeln ("## $1");
+        }
+        elsif (/^\+\+\+\s+(.*)$/) {
+            writeln ("### $1");
+        }
+        elsif (/^#\s+(.*)$/) {
+            writeln ("1. $1");
+        }
+        elsif (/\|\|/) {
+            s/\|\|/|/g;
+            writeln ($_);
+        }
+        else {
+            writeln ($_);
+        }
+    }
+    writeln ("");
+}
+
+#   Writes $_ to OUTPUT after expanding all symbols
+sub writeln {
+    local ($_) = @_;
+
+    #   Translate bookmark references
+    while (/\[#(\S+)\]/) {
+        print "Undefined bookmark: $1\n"
+            unless defined ($bookmarks {$1});
+        $_ = "$`“$bookmarks{$1}”$'";
+    }
+    #   Translate character styles
+    s/(^|[^:])\/\/(\S[^\/]+)\/\//$1*$2*/g;
+
+    #   Translate normal hyperlinks
+    s/\[(http(s)?:\/\/[^ ]+) ([^\]]+)\]/[$3]($1)/g;
+
+    print OUTPUT "$_\n";
+}
+
+#   Load bookmarks
+sub bookmarks_load {
+    if (open (BOOKMARKS, ".bookmarks")) {
+        while (<BOOKMARKS>) {
+            chop;
+            if (/(\S+)\s+(.+)\|(.+)/) {
+                $bookmarks {$1} = $2;
+                $documents {$1} = $3;
+            }
+        }
+        close (BOOKMARKS);
+    }
+}
+
+#   Save bookmarks
+sub bookmarks_save {
+    if (open (BOOKMARKS, ">.bookmarks")) {
+        foreach $bookmark (keys %bookmarks) {
+            print BOOKMARKS "$bookmark $bookmarks{$bookmark}|$documents{$bookmark}\n";
+        }
+        close (BOOKMARKS);
+    }
+}
