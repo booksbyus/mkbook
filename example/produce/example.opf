@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package unique-identifier="uid">
+<metadata>
+  <dc-metadata xmlns:dc="http://purl.org/metadata/dublin_core" xmlns:oebpackage="http://openebook.org/namespaces/oeb-package/1.0/">
+    <dc:Title>Book title</dc:Title>
+    <dc:Language>en-us</dc:Language>
+    <dc:Identifier id="uid">xxx-xxxxxxxx</dc:Identifier>
+    <dc:Creator>Your name</dc:Creator>
+    <dc:Publisher>Publisher name</dc:Publisher>
+    <dc:Subject BISACCode="nnnnnnnnnn">text</dc:Subject>
+    <dc:Description></dc:Description>
+    <dc:Date>date</dc:Date>
+  </dc-metadata>
+
+  <x-metadata>
+    <output encoding="utf-8" content-type="text/x-oeb1-document"></output>
+    <EmbeddedCover>../cover/cover-kindle.jpg</EmbeddedCover>
+    <SRP Currency="USD">19.99</SRP>
+  </x-metadata>
+</metadata>
+<manifest>
+  <item id="toc" media-type="text/x-oeb1-document" href="example_toc.html"></item>
+  <item id="text" media-type="text/x-oeb1-document" href="example.html"></item>
+</manifest>
+
+<spine>
+  <itemref idref="toc"/>
+  <itemref idref="text"/>
+</spine>
+
+<tours></tours>
+<guide></guide>
+</package>

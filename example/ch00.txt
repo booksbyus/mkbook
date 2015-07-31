@@ -1,0 +1,6 @@
+// kate: font Liberation Sans; font-size 16; syntax None; bom off;
+.bookmark preface
++ Preface
+
+Introduce the book here.
+

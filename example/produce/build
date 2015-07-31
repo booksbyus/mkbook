@@ -1,0 +1,9 @@
+#! /bin/bash
+
+mkmarkdown example.book
+mkodt example.book
+md2html example.book
+# kindlegen example.opf
+# ebook-convert example.mobi example.epub
+
+rm -rf output

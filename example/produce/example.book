@@ -1,0 +1,40 @@
+FILENAME=example
+AUTHOR=Your Name
+TITLE=Title of Book
+SUBTITLE=Subtitle of Book
+TITLENOTE=
+
+#   Page dimensions in cm
+WIDTH=13.97
+HEIGHT=21.59
+TOP=1.4
+BOTTOM=1.4
+INSIDE=2.3
+OUTSIDE=1.4
+
+#   Fonts
+HEADERFONT=DejaVu Sans
+BODYFONT=DejaVu Sane
+TEXTHEIGHT=90%
+TEXTSIZE=11pt
+
+#   Copyright page
+EDITION=Edition 1.0: date
+ISBN=ISBN xxx-xxxxxxxx
+DEDICATION=To my cats
+COPYRIGHT=Copyright © yyyy Your Name
+LICENSE=All rights reserved
+PUBLISHER=Amazon.com
+CREDITS1=
+CREDITS2=
+
+#   Build index
+#INDEX=../index.txt
+
+#   Body content
+HEADER=Book title
+BREAKS=chapter
+
+#   Content
+../ch00.txt
+../ch01.txt

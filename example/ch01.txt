@@ -1,0 +1,34 @@
+// kate: font Liberation Sans; font-size 16; syntax None; bom off;
+.bookmark shortname
++ Chapter Title
+
+Write your text using the undocumented hybrid format :-)
+
+.- Ignore this line, it's a comment
+
++ Preface
++ Postface
++ Appendix: stuff to add
+
+These are special ^^^
+
+> This is a quote from another of my books.
+
+# First item
+# Second item
+# Third item
+
+Here is a table:
+
+|| Title || Title ||
+|| Data  || Data  ||
+
+
+++ Section Title
+
++++ Subsection Title
+
+* This is **bold**.
+* This is //Italic//.
+* This is [http://google.com a reference].
+
