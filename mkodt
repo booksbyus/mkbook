@@ -1,7 +1,9 @@
 #! /usr/bin/perl
 #
-#   Builds
-#   This should be moved off into a separate tool
+#   Builds a book as an ODT file. Note that this needs all templates
+#   in current directory as .tpl files. To start a new book, copy the
+#   example directory, edit the files. Then run mkodt in the produce
+#   directory.
 #
 use Tree::Trie;
 use feature 'say';
