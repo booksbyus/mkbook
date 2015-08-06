@@ -21,3 +21,11 @@ Required Linux packages:
 - rasterizer
 - pygmentize
 - Perl Tree::Trie
+
+Workflow:
+
+# Edit each chapter as a file chnn.txt
+# run ./build in produce
+# this produces ODF, HTML, MD files
+# for printable PDF, load ODF in LibreOffice and save as PDF
+
