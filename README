@@ -42,3 +42,7 @@ The templating system works by inserting symbols from the .book file into
 templates. There are a few symbols known to the mkodt script: FILENAME,
 INDEX, BREAKS, INSIDE, OUTSIDE, HRIGHT. The others are only known to the
 templates.
+
+To check/modify the ODT templates, you have to know how to expand an ODT
+file using unzip, then you can copy/paste code from the various ODT sub
+files into the templates.
