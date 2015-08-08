@@ -123,8 +123,8 @@ sub close_list {
 sub writeln {
     local ($_) = @_;
 
-    #   Substitute variables
-    while (/%([A-Z0-9]+)%/) {
+    #   Substitute template variables
+    while (/%(A-Z[A-Z0-9]+)%/) {
         $_ = $`.$symbols {$1}.$';
     }
     #   Emails
