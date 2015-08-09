@@ -86,7 +86,7 @@ sub process_template {
         }
         else {
             #   Substitute template variables
-            while (/%(A-Z[A-Z0-9_]+)%/) {
+            while (/%([A-Z0-9_]+)%/) {
                 $_ = $`.$symbols {$1}.$';
             }
             writeln ($_);
