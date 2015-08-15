@@ -1,0 +1,40 @@
+#   Page dimensions in cm
+WIDTH=13.97
+HEIGHT=21.59
+TOP=1.4
+BOTTOM=1.4
+INSIDE=2.3
+OUTSIDE=1.4
+
+#   Fonts
+HEADERFONT=EB Garamond
+BODYFONT=EB Garamond
+TEXTHEIGHT=90%
+TEXTSIZE=11pt
+
+#   Title pages
+
+FILENAME=model
+TITLE=Model Document
+SUBTITLE=Generated from model.book
+TITLENOTE=Edit in LibreOffice, save and unpack
+AUTHOR=Pieter Hintjens
+DEDICATION=Dedication example
+COPYRIGHT=Copyright © 2010-2013 Pieter Hintjens
+LICENSE=Licensed under CC-BY-SA-3.0
+TRADEMARKS=List of trademarks
+PUBLISHER=Name of publisher
+CREDITS1=Random credits
+CREDITS2=More credits
+HEADER=Header text
+FOOTER=Footer text
+EDITION=Edition number
+ISBN=ISBN 999-999999
+
+#   Build index
+INDEX=model.idx
+BREAKS=chapter
+
+#   Content
+
+model.txt
