@@ -124,7 +124,7 @@ sub writeln {
     local ($_) = @_;
 
     #   Substitute template variables
-    while (/%(A-Z[A-Z0-9]+)%/) {
+    while (/%([A-Z][A-Z0-9]+)%/) {
         $_ = $`.$symbols {$1}.$';
     }
     #   Emails
