@@ -25,9 +25,6 @@ while (<>) {
         }
     }
     elsif (/(\S+)/) {
-        if ($content == 0) {
-            $content = 1;
-        }
         #   Source file to include
         process_source ($1);
     }
