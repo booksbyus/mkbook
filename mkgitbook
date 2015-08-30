@@ -1,6 +1,6 @@
 #! /usr/bin/perl
 #
-#   Builds gitbook files from supplied text
+#   Builds gitbook project from supplied text
 #   Outputs gitbook/chapter1.md, gitbook/chapter2.md, etc.
 #
 use feature 'say';
@@ -10,7 +10,7 @@ bookmarks_load ();
 $| = 1;
 
 mkdir ("gitbook");
-open (SUMMARY, ">gitbook/SUMMARY.md");
+open  SUMMARY, ">gitbook/SUMMARY.md";
 print SUMMARY "# Summary\n";
 
 while (<>) {
@@ -23,9 +23,6 @@ while (<>) {
         $symbols {$1} = $2;
     }
     elsif (/(\S+)/) {
-        if ($content == 0) {
-            $content = 1;
-        }
         #   Source file to include
         process_source ($1);
     }
@@ -58,16 +55,19 @@ sub process_source {
         elsif (/^\+\s+Preface/) {
             writeln ("# Preface");
             print SUMMARY "* [Preface](preface.md)\n";
+            open OUTPUT, ">gitbook/preface.md";
         }
         elsif (/^\+\s+Postface/) {
             writeln ("# Postface");
             print SUMMARY "* [Postface](postface.md)\n";
+            open OUTPUT, ">gitbook/postface.md";
         }
         elsif (/^\+\s+Appendix: (.*)$/) {
             $bookmarks {$anchor} = $1 if $anchor;
             $documents {$anchor} = $symbols {TITLE};
             $appendix++;
             print SUMMARY "* [Appendix $appendix](appendix$appendix.md)\n";
+            open OUTPUT, ">gitbook/appendix$appendix.md";
             writeln ("# Appendix $appendix: $1");
         }
         elsif (/^\+\s+(.*)$/) {
@@ -75,6 +75,7 @@ sub process_source {
             $documents {$anchor} = $symbols {TITLE};
             $chapter++;
             print SUMMARY "* [Chapter $chapter - $1](chapter$chapter.md)\n";
+            open OUTPUT, ">gitbook/chapter$chapter.md";
             writeln ("# Chapter $chapter. $1");
         }
         elsif (/^\+\+\s+(.*)$/) {
