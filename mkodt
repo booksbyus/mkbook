@@ -385,7 +385,6 @@ sub postformat {
 sub valueof {
     local ($symbol, $default) = @_;     #   Argument is symbol name
     local ($return);                    #   Returned value
-    local ($langed_symbol);             #   Language-dependent symbol
 
     if (defined ($symbols {$symbol})) {
         $return = $symbols {$symbol};
