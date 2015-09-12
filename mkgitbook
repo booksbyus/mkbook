@@ -27,6 +27,26 @@ while (<>) {
         process_source ($1);
     }
 }
+
+#   Create cover page
+open OUTPUT, ">gitbook/README.md";
+
+writeln (<< ".");
+<html>
+<center>
+<h1>%TITLE%</h1>
+<h2>%SUBTITLE%</h2>
+<p>%TITLENOTE%</p>
+<h2>%AUTHOR%</h2>
+</center>
+</html>
+­%DEDICATION%. %COPYRIGHT%. %EDITION%. %LICENSE%. %PUBLISHER%. %TRADEMARKS%. %CREDITS1%. %CREDITS2%.
+[Buy Kindle or paperback now at Amazon.com](%PURCHASE%)
+%ISBN%
+%BIOGRAPHY%
+%OTHERBOOKS%
+.
+
 bookmarks_save ();
 exit (0);
 
@@ -107,6 +127,10 @@ sub writeln {
         print "Undefined bookmark: $1\n"
             unless defined ($bookmarks {$1});
         $_ = "$`“$bookmarks{$1}”$'";
+    }
+    #   Substitute template variables %NAME%
+    while (/%([A-Z0-9_]+)%/) {
+        $_ = $`.$symbols {$1}.$';
     }
     #   Translate character styles
     s/(^|[^:])\/\/(\S[^\/]+)\/\//$1*$2*/g;
