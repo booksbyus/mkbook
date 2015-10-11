@@ -32,15 +32,11 @@ while (<>) {
 open OUTPUT, ">gitbook/README.md";
 
 writeln (<< ".");
-<html><center><h1>%TITLE%</h1></center></html>
+<center><h1>%TITLE%</h1></center>
+<center><h2>%SUBTITLE%</h2></center>
+<center><h2>%AUTHOR%</h2></center>
 
-<html><center><h2>%SUBTITLE%</h2></center></html>
-
-<html><center><p>%TITLENOTE%</p></center></html>
-
-<html><center><h2>%AUTHOR%</h2></center></html>
-
-­%DEDICATION%. %COPYRIGHT%. %EDITION%. %LICENSE%. %PUBLISHER%. %TRADEMARKS%. %CREDITS1%. %CREDITS2%.
+­%DEDICATION%. %COPYRIGHT%. %EDITION%. %LICENSE%. %TRADEMARKS%. %CREDITS1%. %CREDITS2%.
 
 [Buy Kindle or paperback now at Amazon.com](%PURCHASE%)
 
