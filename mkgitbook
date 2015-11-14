@@ -32,8 +32,7 @@ while (<>) {
 open OUTPUT, ">gitbook/README.md";
 
 writeln (<< ".");
-# %TITLE%
-### %SUBTITLE%
+<h2>%TITLE% - %SUBTITLE%</h2>
 
 ### [Buy at Amazon.com](%PURCHASE%)
 
