@@ -220,6 +220,34 @@ sub process_source {
             writeln ("</table:table-row>");
             $line_density = 80;
         }
+        elsif (/^```/) {            #   Console text (Markdown style)
+            close_list ();
+            $code = "";
+            while (<FILE>) {
+                last if /^```/;
+                $code .= "<text:line-break/>" if $code;
+                $code .= preformat ($_);
+            }
+            writeln ("<text:p text:style-name=\"Console\">$_</text:p>");
+        }
+        elsif (/\[\[code\]\]/) {
+            close_list ();
+            $code = "";
+            while (<FILE>) {
+                last if /\[\[\/code\]\]/;
+                $code .= "<text:line-break/>" if $code;
+                $code .= preformat ($_);
+            }
+            writeln ("<text:p text:style-name=\"Source Code\">$code</text:p>");
+        }
+        elsif (/^```/) {            #   Code block
+            close_list ();
+            while (<FILE>) {
+                last if /^```/;
+                $_ = preformat ($_);
+                writeln ("<text:p text:style-name=\"Console\">$_</text:p>");
+            }
+        }
         elsif ($_) {
             #   Normal text
             close_list ();

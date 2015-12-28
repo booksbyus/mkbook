@@ -51,4 +51,6 @@ files into the templates.
 
 The model directory contains a model.odt that you can use for this purpose.
 
+To format an XML file to be readable:
 
+    xmllint --pretty 1 somefile.xml > x && mv x somefile.xml

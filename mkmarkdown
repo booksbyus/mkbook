@@ -82,10 +82,10 @@ sub process_source {
         elsif (/^\+\+\+\s+(.*)$/) {
             writeln ("### $1");
         }
-        elsif (/^#\s+(.*)$/) {
+        elsif (/^#\s+(.*)$/) {      #   Numbered lists
             writeln ("1. $1");
         }
-        elsif (/\|\|/) {
+        elsif (/\|\|/) {            #   Table layouts
             s/\|\|/|/g;
             writeln ($_);
         }

@@ -102,6 +102,14 @@ while (<>) {
     elsif (/\[\[code/) {
         print "E: unparsed code block: $_\n";
     }
+    #  Process plain code block in Markdown style
+    elsif (/^```/) {
+        while (<>) {
+            last if /^```/;
+            chop;
+            writesrc ($_);
+        }
+    }
     else {
         #   Normal text
         #   Replace double hyphens with em dashes

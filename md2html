@@ -78,6 +78,16 @@ sub process_source {
             require_list ("ol");
             writeln ("<li>$'</li>");
         }
+        elsif (/^```/) {
+            if ($in_pre) {
+                writeln ("</pre>");
+                $in_pre = 0;
+            }
+            else {
+                writeln ("<pre>");
+                $in_pre = 1;
+            }
+        }
         elsif (/^\|/) {
             #   Table row starts with | in first column
             $columns = 0;
@@ -93,9 +103,14 @@ sub process_source {
             writeln ("</tr>");
         }
         elsif ($_) {
-            #   Normal text
-            close_list ();
-            writeln ("<p>$_</p>");
+            if ($in_pre) {
+                writeln ("$_");
+            }
+            else {
+                #   Normal text
+                close_list ();
+                writeln ("<p>$_</p>");
+            }
         }
     }
     writeln ("</body>");
