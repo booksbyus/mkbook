@@ -240,14 +240,6 @@ sub process_source {
             }
             writeln ("<text:p text:style-name=\"Source Code\">$code</text:p>");
         }
-        elsif (/^```/) {            #   Code block
-            close_list ();
-            while (<FILE>) {
-                last if /^```/;
-                $_ = preformat ($_);
-                writeln ("<text:p text:style-name=\"Console\">$_</text:p>");
-            }
-        }
         elsif ($_) {
             #   Normal text
             close_list ();

@@ -100,12 +100,29 @@ sub process_source {
         elsif (/^\+\+\+\s+(.*)$/) {
             writeln ("### $1");
         }
-        elsif (/^#\s+(.*)$/) {
+        elsif (/^#\s+(.*)$/) {      #   Numbered lists
             writeln ("1. $1");
         }
-        elsif (/\|\|/) {
+        elsif (/\|\|/) {            #   Table layouts
             s/\|\|/|/g;
             writeln ($_);
+        }
+        elsif (/^```/) {            #   Console text
+            writeln ($_);
+            while (<FILE>) {
+                chop while /\s$/;
+                writeln ($_);
+                last if /^```/;
+            }
+        }
+        elsif (/\[\[code\]\]/) {    #   Source code
+            writeln ("```");
+            while (<FILE>) {
+                chop while /\s$/;
+                last if /\[\[\/code\]\]/;
+                writeln ($_);
+            }
+            writeln ("```");
         }
         else {
             writeln ($_);
@@ -129,7 +146,9 @@ sub writeln {
         $_ = $`.$symbols {$1}.$';
     }
     #   Translate character styles
-    s/(^|[^:])\/\/(\S[^\/]+)\/\//$1*$2*/g;
+    s/(^|[^:])\/\/(\S[^\/]+)\/\//$1*$2*/g;  # Italics
+    s/\*\*([^*]+)\*\*/**$1**/g;             #  Bold
+    s/\{\{([^{]+)\}\}/<tt>$1<\/tt>/g;       #  Teletype
 
     #   Translate normal hyperlinks
     s/\[(http(s)?:\/\/[^ ]+) ([^\]]+)\]/[$3]($1)/g;

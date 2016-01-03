@@ -2,6 +2,8 @@
 #
 #   Builds markdown from supplied text
 #
+#   Note: if you change the Markdown parsing, also change mkgitbook.
+
 use feature 'say';
 bookmarks_load ();
 
@@ -88,6 +90,23 @@ sub process_source {
         elsif (/\|\|/) {            #   Table layouts
             s/\|\|/|/g;
             writeln ($_);
+        }
+        elsif (/^```/) {            #   Console text
+            writeln ($_);
+            while (<FILE>) {
+                chop while /\s$/;
+                writeln ($_);
+                last if /^```/;
+            }
+        }
+        elsif (/\[\[code\]\]/) {    #   Source code
+            writeln ("```");
+            while (<FILE>) {
+                chop while /\s$/;
+                last if /\[\[\/code\]\]/;
+                writeln ($_);
+            }
+            writeln ("```");
         }
         else {
             writeln ($_);
