@@ -84,6 +84,9 @@ sub process_source {
         elsif (/^\+\+\+\s+(.*)$/) {
             writeln ("### $1");
         }
+        elsif (/^\*\s+(.*)$/) {      #   Bulleted lists
+            writeln ("* $1");
+        }
         elsif (/^#\s+(.*)$/) {      #   Numbered lists
             writeln ("1. $1");
         }
