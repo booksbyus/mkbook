@@ -49,6 +49,12 @@ sub process_source {
         if (/^\/\/ kate/) {
             #   Kate hint
         }
+        elsif (/^\./) {
+            #   Process directive
+            if (/^\.end/) {
+                last;
+            }
+        }
         elsif (/^#\s+/) {
             close_list ();
             $anchor++;
