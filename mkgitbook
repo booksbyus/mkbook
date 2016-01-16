@@ -147,7 +147,7 @@ sub writeln {
         $_ = $`.$symbols {$1}.$';
     }
     #   Translate character styles
-    s/(^|[^:])\/\/(\S[^\/]+)\/\//$1*$2*/g;  # Italics
+    s/(^|[^:])\/\/(.*?)\/\//$1*$2*/g;       # Italics
     s/\*\*([^*]+)\*\*/**$1**/g;             #  Bold
     s/\{\{([^{]+)\}\}/<tt>$1<\/tt>/g;       #  Teletype
 

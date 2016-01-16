@@ -376,7 +376,7 @@ sub postformat {
     s/\<([\w\.]+@[\w\.]+)\>/<text:span text:style-name=\"Teletype\">$1<\/text:span>/g;
 
     #   Translate character styles
-    s/([^:])\/\/([^\/]+)\/\//$1<text:span text:style-name=\"Italic\">$2<\/text:span>/g;
+    s/([^:])\/\/(.*?)\/\//$1<text:span text:style-name=\"Italic\">$2<\/text:span>/g;
     s/\*\*([^*]+)\*\*/<text:span text:style-name=\"Bold\">$1<\/text:span>/g;
     s/\{\{([^{]+)\}\}/<text:span text:style-name=\"Teletype\">$1<\/text:span>/g;
 
