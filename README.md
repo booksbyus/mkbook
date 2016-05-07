@@ -1,4 +1,4 @@
-Written in 2010-2015 by Pieter Hintjens, pieter@hintjens.com, unless 
+Written in 2010-2016 by Pieter Hintjens, pieter@hintjens.com, unless 
 otherwise specified.
 
 To the extent possible under law, the author has dedicated all copyright 
@@ -15,6 +15,13 @@ with this software. If not, see:
 These are the tools I use to build my books. They are not packaged or 
 documented for public use. I'm not accepting pull requests or patches
 at this stage.
+
+* To install, you need all the tools in bin/, somewhere on your path. I
+suggest copying them to /usr/local/bin.
+
+* To use, take the directory example/, and copy to a new directory that
+represents your book project.
+
 
 Required Linux packages:
 
