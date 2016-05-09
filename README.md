@@ -12,6 +12,9 @@ with this software. If not, see:
 
 =========================================================================
 
+To contribute, send a pull request. This project uses 
+[ZeroMQ RFC 42](http://rfc.zeromq.org/spec:42) as its contribution process.
+
 These are the tools I use to build my books. They are not packaged or 
 documented for public use. I'm not accepting pull requests or patches
 at this stage.

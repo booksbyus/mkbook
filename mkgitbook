@@ -32,8 +32,8 @@ while (<>) {
 open OUTPUT, ">gitbook/README.md";
 
 writeln ("<h2>$symbols{TITLE} - $symbols{SUBTITLE}</h2>\n");
-writeln ("### [Buy at Amazon.com]($symbols{PURCHASE})\n") if $symbols {PURCHASE};
-writeln ("#### $symbols{BLURB}\n") if $symbols {BLURB};
+writeln ("### [Save to Kindle]($symbols{PURCHASE})\n") if $symbols {PURCHASE};
+writeln ("**$symbols{BLURB}**\n") if $symbols {BLURB};
 $copy = "$symbols{COPYRIGHT}. ";
 $copy = "$symbols{EDITION}. " if $symbols {EDITION};
 $copy = "$symbols{LICENSE}. " if $symbols {LICENSE};
