@@ -28,16 +28,16 @@ represents your book project.
 
 Required Linux packages:
 
-- rasterizer
-- pygmentize
+- rasterizer from libbatik-java (Ubuntu) you might also want to install libxmlgraphics-common-java (Ubuntu).
+- pygmentize from python-pygments (Ubuntu)
 - Perl Tree::Trie
 
 ## Workflow
 
-# Edit each chapter as a file chnn.txt
-# run ./build in produce
-# this produces ODF, HTML, MD files
-# for printable PDF, load ODF in LibreOffice and save as PDF/A-a1.
+- Edit each chapter as a file chnn.txt
+- run ./build in produce
+- this produces ODF, HTML, MD files
+- for printable PDF, load ODF in LibreOffice and save as PDF/A-a1.
 
 For an index, set the INDEX variable in the .book file to a file
 (index.txt is an example) containing one keyword per line. To 
