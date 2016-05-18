@@ -28,7 +28,7 @@ represents your book project.
 
 Required Linux packages:
 
-- rasterizer from libbatik-java (Ubuntu). You might also want to install libxmlgraphics-common-java (Ubuntu).
+- rasterizer from libbatik-java (Ubuntu). You might also want to install libxmlgraphics-commons-java (Ubuntu).
 - pygmentize from python-pygments (Ubuntu)
 - Perl Tree::Trie
 
