@@ -70,14 +70,14 @@ sub process_source {
             }
         }
         elsif (/^\+\s+Preface/) {
-            writeln ("# Preface");
             print SUMMARY "* [Preface](preface.md)\n";
             open OUTPUT, ">gitbook/preface.md";
+            writeln ("# Preface");
         }
         elsif (/^\+\s+Postface/) {
-            writeln ("# Postface");
             print SUMMARY "* [Postface](postface.md)\n";
             open OUTPUT, ">gitbook/postface.md";
+            writeln ("# Postface");
         }
         elsif (/^\+\s+Appendix: (.*)$/) {
             $bookmarks {$anchor} = $1 if $anchor;
